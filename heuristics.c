@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <assert.h>
 #include "bithacks.h"
 #include "movement.h"
 #include "heuristics.h"
@@ -17,6 +18,8 @@ static int16_t get_piece_value(Piece type) {
         case QUEEN:  return 900;
         case KING:   return 6000;
     }
+    assert(false);
+    return -1;
 }
 
 static void set_PST(Piece type, int16_t *table) {

@@ -86,7 +86,10 @@ void cli_loop(Player *me, Player *op) {
 
     char command;
     do {
-        scanf("%c", &command);
+        if (!scanf("%c", &command)) {
+            printf("error reading command\n");
+            return;
+        }
     } while (command == ' ' || command == '\n');
 
     switch (command) {

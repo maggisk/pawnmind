@@ -1,8 +1,10 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <sys/types.h>
 #include "constants.h"
 #include "util.h"
 #include "search.h"
@@ -139,13 +141,13 @@ void xboard_main(void) {
             line[len - 1] = '\0';
         char *cmd = strtok(line, " ");
 
-           dispatch("protover", cmd, cmd_protover)
-        || dispatch("new", cmd, cmd_new)
-        || dispatch("force", cmd, cmd_force)
-        || dispatch("usermove", cmd, cmd_usermove)
-        || dispatch("go", cmd, cmd_go)
-        || dispatch("ping", cmd, cmd_ping)
-        || dispatch("quit", cmd, cmd_quit)
-        || catch_all(cmd);
+        (void)(dispatch("protover", cmd, cmd_protover)
+            || dispatch("new", cmd, cmd_new)
+            || dispatch("force", cmd, cmd_force)
+            || dispatch("usermove", cmd, cmd_usermove)
+            || dispatch("go", cmd, cmd_go)
+            || dispatch("ping", cmd, cmd_ping)
+            || dispatch("quit", cmd, cmd_quit)
+            || catch_all(cmd));
     }
 }
