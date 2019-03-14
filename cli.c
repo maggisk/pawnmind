@@ -9,6 +9,7 @@
 #include "bithacks.h"
 #include "movement.h"
 #include "search.h"
+#include "transpos.h"
 
 bool read_move(U64 *from, U64 *to) {
     char col_from, row_from, col_to, row_to;
@@ -37,7 +38,7 @@ char* piece_to_string(Player *p, int i) {
 
     for (int type = FIRST_PIECE; type <= LAST_PIECE; type++)
         if (b & p->pieces[type])
-            return piece_str[type + 6 * (p->is_white ? 1 : 0)];
+            return piece_str[type + (p->is_white ? 0 : 6)];
     return "";
 }
 
@@ -96,6 +97,7 @@ void cli_loop(Player *me, Player *op) {
                 printf("exiting\n");
                 return;
             }
+            //transpos_report();
             break;
         case 'm':
             while (!read_move(&from, &to))

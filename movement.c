@@ -142,16 +142,7 @@ U64 bishop_moves_all(int sqr, U64 occupied) {
 }
 
 U64 queen_moves_all(int sqr, U64 occupied) {
-    // return rook_moves_all(sqr, occupied) | bishop_moves_all(sqr, occupied);
-    return (move_bishop[sqr] | move_rook[sqr])
-         ^ move_north_east[lsb_index((move_north_east[sqr] & occupied) | ((U64)1 << 63))]
-         ^ move_north_west[lsb_index((move_north_west[sqr] & occupied) | ((U64)1 << 63))]
-         ^ move_south_west[msb_index((move_south_west[sqr] & occupied) | 1)]
-         ^ move_south_east[msb_index((move_south_east[sqr] & occupied) | 1)]
-         ^ move_north[lsb_index((move_north[sqr] & occupied) | ((U64)1 << 63))]
-         ^ move_west[ lsb_index((move_west[sqr]  & occupied) | ((U64)1 << 63))]
-         ^ move_south[msb_index((move_south[sqr] & occupied) | 1)]
-         ^ move_east[ msb_index((move_east[sqr]  & occupied) | 1)];
+    return rook_moves_all(sqr, occupied) | bishop_moves_all(sqr, occupied);
 }
 
 U64 knight_moves_all(int sqr) {
@@ -172,17 +163,18 @@ U64 king_moves_all(int sqr, Player *me, Player *op) {
 
 // pawn move function is different because origin can contain multiple bits/pawns
 // and the return bitboard will contain all squares any pawn can move to
+// NB: occupied should include en passant when needed
 U64 pawn_moves_all(U64 origin, U64 occupied, bool is_white) {
-    // NB: occupied should include en passant when needed
     U64 moves, empty = ~occupied;
+
     if (is_white) {
         moves  = (origin << 8) & empty;
-        moves |= (moves  << 8) & empty;
+        moves |= (moves  << 8) & empty & ROW_4;
         moves |= (origin << 9) & ~COL_H & occupied;
         moves |= (origin << 7) & ~COL_A & occupied;
     } else {
         moves  = (origin >> 8) & empty;
-        moves |= (moves  >> 8) & empty;
+        moves |= (moves  >> 8) & empty & ROW_5;
         moves |= (origin >> 9) & ~COL_A & occupied;
         moves |= (origin >> 7) & ~COL_H & occupied;
     }
@@ -266,6 +258,13 @@ void apply_move(U64 from, U64 to, Piece type, Player *me, Player *op) {
                 me->en_passant = from << 8;
             if ((from & ROW_7) && (to & ROW_5))
                 me->en_passant = from >> 8;
+
+            // pawn promotions
+            if (to & (ROW_1 | ROW_8)) {
+                me->pieces[PAWN] &= ~to;
+                me->pieces[QUEEN] |= to;
+            }
+
             break;
 
         default:

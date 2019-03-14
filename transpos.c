@@ -2,9 +2,15 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "transpos.h"
 #include "bithacks.h"
 #include "constants.h"
+
+/**
+ * this module is a work in progress
+ * it is disabled atm because it doesn't support alpha-beta pruning
+ */
 
 typedef struct TTNode {
     U64 hash;
@@ -78,7 +84,7 @@ static void remove_node(TTNode *node) {
 
 static void insert_node(TTNode *node) {
     int index = node->hash % TABLE_SIZE;
-    if (0 && hash_table[index] != NULL) {
+    if (hash_table[index] != NULL) {
         printf("hash table conflict\n");
         TTNode *n = hash_table[index];
         printf("%" PRIu64 "\n", node->hash);
@@ -142,4 +148,20 @@ bool transpos_lookup(U64 hash, bool is_white, int depth_left, int *value) {
         *value = -(*value);
 
     return true;
+}
+
+void transpos_report(void) {
+    int counts[10];
+    memset(counts, 0, sizeof(counts));
+
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        int n = 0;
+        for (TTNode *node = hash_table[i]; node; node = node->next)
+            n++;
+        if (n < 10)
+            counts[n]++;
+    }
+
+    for (int i = 0; i < 10; i++)
+        printf("%d: %d\n", i, counts[i]);
 }

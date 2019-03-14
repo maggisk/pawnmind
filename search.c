@@ -12,10 +12,11 @@
 #include "util.h"
 #include "transpos.h"
 
-static bool should_use_move(bool ignores_move, int new_score, int old_score, int *nscore) {
+static bool should_use_move(int new_score, int old_score, int *nscore) {
     // always if the score is improved
     if (new_score > old_score) {
-        *nscore = 1; // we've now once chosen a score of this value
+        if (nscore != NULL)
+            *nscore = 1; // we've now once chosen a score of this value
         return true;
     }
 
@@ -23,9 +24,8 @@ static bool should_use_move(bool ignores_move, int new_score, int old_score, int
     if (new_score < old_score)
         return false;
 
-    // if we don't care about the actual move, only the score, we don't need to
-    // waste time on remembering the move that gave this score
-    if (ignores_move)
+    // if nscore is NULL we care only about the score and not the move that gave that score
+    if (nscore == NULL)
         return false;
 
     // otherwise we choose one of the best moves by random
@@ -33,12 +33,8 @@ static bool should_use_move(bool ignores_move, int new_score, int old_score, int
     return (rand() % ++(*nscore)) == 0;
 }
 
-int search(Move *move, Player *me, Player *op, int depth) {
-    if (move != NULL)
-        move->ok = false;
-
+int search_recursive(Move *move, Player *me, Player *op, int depth, int *nscore, int alpha, int beta) {
     int score = INT_MIN;
-    int nscore = 0;
     U64 not_me = ~me->occupied;
     depth--;
 
@@ -62,25 +58,25 @@ int search(Move *move, Player *me, Player *op, int depth) {
 
                 // check transposition table
                 int new_score;
-                U64 hash = transpos_hash_players(&me_copy, &op_copy);
-                if (!transpos_lookup(hash, me->is_white, depth, &new_score)) {
+                //U64 hash = transpos_hash_players(&me_copy, &op_copy);
+                //if (!transpos_lookup(hash, me->is_white, depth, &new_score)) {
                     // not in table, search deeper and insert new value
                     new_score = (depth <= 0)
                         ? evaluate_position(&me_copy, &op_copy)
-                        : -search(NULL, &op_copy, &me_copy, depth);
-                    transpos_insert(hash, me->is_white, depth, new_score);
-                }
+                        : -search_recursive(NULL, &op_copy, &me_copy, depth, NULL, -beta, -alpha);
+                    //transpos_insert(hash, me->is_white, depth, new_score);
+                //}
 
                 // debug
                 if (move != NULL) {
                     char c_from[3], c_to[3];
                     strcpy(c_from, bbsqr_to_s(from));
                     strcpy(c_to, bbsqr_to_s(to));
-                    printf("score for %s -> %s : %d\n", c_from, c_to, new_score);
+                    printf("# %s%s: %d\n", c_from, c_to, new_score);
                 }
 
                 // remember move and score if it's better than we previously had
-                if (should_use_move(move == NULL, new_score, score, &nscore)) {
+                if (should_use_move(new_score, score, nscore)) {
                     score = new_score;
                     if (move != NULL) {
                         move->ok = true;
@@ -88,9 +84,21 @@ int search(Move *move, Player *me, Player *op, int depth) {
                         move->to = to;
                     }
                 }
+
+                // alpha-beta pruning
+                if (score > alpha)
+                    alpha = score;
+                if (alpha >= beta)
+                    break;
             }
         }
     }
 
     return score;
+}
+
+int search(Move *move, Player *me, Player *op, int depth) {
+    move->ok = false;
+    int nscore = 0;
+    return search_recursive(move, me, op, depth, &nscore, INT_MAX / -2, INT_MAX / 2);
 }

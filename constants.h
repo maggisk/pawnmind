@@ -22,6 +22,8 @@ typedef uint64_t U64;
 #define ROW_7 ((U64)0x00ff000000000000)
 #define ROW_8 ((U64)0xff00000000000000)
 
+#define FEN_INIT "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
 typedef enum {
     PAWN,
     KNIGHT,
@@ -40,11 +42,11 @@ typedef enum {
 } Color;
 
 typedef struct {
-    U64 pieces[LAST_PIECE + 1];
+    U64 pieces[6];
     U64 occupied, en_passant, castling, hash;
     bool is_white;
 } Player;
 
-typedef struct {
+typedef struct Game {
     Player white, black;
 } Game;
